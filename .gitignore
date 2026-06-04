@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Environment — NEVER commit secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Test coverage
+coverage/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Certificates / keys
+*.pem
+*.key
+*.cert
+
+# Editor artifacts
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Generated cache
+.atl/*.cache.json
