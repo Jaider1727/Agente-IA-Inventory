@@ -6,6 +6,10 @@ node_modules/
 .env.local
 .env.*.local
 
+# Per-instance deploy secrets (keep only the .example templates)
+deploy/.env.*
+!deploy/.env.*.example
+
 # Logs
 *.log
 npm-debug.log*

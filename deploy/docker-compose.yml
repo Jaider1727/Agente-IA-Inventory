@@ -1,0 +1,47 @@
+# Instance-per-tenant deployment for a single VPS.
+#
+# - Caddy terminates HTTPS (automatic Let's Encrypt) and routes each client
+#   subdomain to that client's container over the internal network.
+# - Each client is one container with its own env file. App containers are NOT
+#   published to the host — only Caddy exposes 80/443.
+# - The database is external (Supabase), so there is no DB service here.
+#
+# Build the image once before starting:
+#   docker build -t agente-facturacion:latest ..
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [web]
+
+  # ── One block per client. Copy, rename, point to its env file. ──
+  cliente1:
+    image: agente-facturacion:latest
+    restart: unless-stopped
+    env_file: ./.env.cliente1
+    expose:
+      - "3000" # internal only — reachable by Caddy as cliente1:3000
+    networks: [web]
+
+  cliente2:
+    image: agente-facturacion:latest
+    restart: unless-stopped
+    env_file: ./.env.cliente2
+    expose:
+      - "3000"
+    networks: [web]
+
+networks:
+  web:
+
+volumes:
+  caddy_data: # persists issued certificates across restarts
+  caddy_config:

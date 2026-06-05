@@ -1,0 +1,17 @@
+# Automatic HTTPS per subdomain. Caddy provisions and renews Let's Encrypt
+# certificates on its own — no manual cert handling.
+#
+# Requirements:
+#   - DNS: *.tudominio.com (and tudominio.com) -> VPS public IP
+#   - Ports 80 and 443 reachable from the internet (ACME HTTP challenge)
+#
+# One block per client. The reverse_proxy target is the compose service
+# name and its internal port.
+
+cliente1.tudominio.com {
+	reverse_proxy cliente1:3000
+}
+
+cliente2.tudominio.com {
+	reverse_proxy cliente2:3000
+}

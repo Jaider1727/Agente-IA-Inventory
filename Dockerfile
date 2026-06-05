@@ -22,7 +22,7 @@ ENV NODE_ENV=production
 # Run as non-root for least-privilege
 USER node
 
-# Railway injects PORT at runtime — default fallback for local Docker runs
+# PORT may be injected at runtime (reverse proxy / orchestrator); 3000 default
 EXPOSE 3000
 
 CMD ["node", "src/app.js"]

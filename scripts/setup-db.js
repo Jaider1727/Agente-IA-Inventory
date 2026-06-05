@@ -6,7 +6,7 @@
  *
  * Usage:
  *   node scripts/setup-db.js                 # local: creates DB + migrates
- *   node scripts/setup-db.js --migrate-only  # Supabase/Railway: migrates only
+ *   node scripts/setup-db.js --migrate-only  # hosted DB (Supabase): migrates only
  */
 
 require('dotenv').config();
