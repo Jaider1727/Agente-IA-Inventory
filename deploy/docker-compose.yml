@@ -42,14 +42,20 @@ services:
       retries: 5
     networks: [web]
 
-  # Web GUI for Postgres (the Postgres equivalent of phpMyAdmin).
+  # Web GUI for Postgres (pgAdmin, the official admin tool).
   # Bound to the VPS localhost only — reach it through an SSH tunnel, never
   # expose a DB admin panel to the public internet.
-  adminer:
-    image: adminer:latest
+  pgadmin:
+    image: dpage/pgadmin4:latest
     restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:?set PGADMIN_EMAIL in deploy/.env}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?set PGADMIN_PASSWORD in deploy/.env}
+      PGADMIN_LISTEN_PORT: 80
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8081:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
     networks: [web]
 
   # ── One block per client. Copy, rename, point to its env file. ──
@@ -82,3 +88,4 @@ volumes:
   caddy_data:  # persists issued certificates across restarts
   caddy_config:
   pg_data:     # ALL client databases live here — back it up
+  pgadmin_data: # pgAdmin saved servers and config
