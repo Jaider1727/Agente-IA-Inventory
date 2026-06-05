@@ -6,7 +6,7 @@
  *
  * Usage:
  *   node scripts/setup-db.js                 # local: creates DB + migrates
- *   node scripts/setup-db.js --migrate-only  # hosted DB (Supabase): migrates only
+ *   node scripts/setup-db.js --migrate-only  # remote/managed DB: migrates only
  */
 
 require('dotenv').config();
@@ -25,7 +25,7 @@ const migrateOnly = process.argv.includes('--migrate-only');
 
 function buildClientConfig(url) {
   const config = { connectionString: url };
-  if (url.includes('supabase.com') || process.env.DB_SSL === 'true') {
+  if (process.env.DB_SSL === 'true') {
     config.ssl = { rejectUnauthorized: false };
   }
   return config;

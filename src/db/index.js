@@ -1,18 +1,19 @@
 'use strict';
 
+const fs = require('fs');
 const { Pool } = require('pg');
 
 const poolConfig = { connectionString: process.env.DATABASE_URL };
 
-// Supabase (and most cloud Postgres providers) require SSL. Validate the
-// certificate (rejectUnauthorized: true) to prevent MITM. If the host's CA is
-// not in Node's trust store, supply it via DB_CA_CERT.
-if (process.env.DATABASE_URL?.includes('supabase.com') ||
-    process.env.DB_SSL === 'true') {
+// A local DB on the Docker network needs no TLS. For a remote database, opt in
+// with DB_SSL=true: the certificate is then verified (rejectUnauthorized: true).
+// Supply the CA via DB_CA_CERT_PATH (path to a .crt) or DB_CA_CERT (inline PEM)
+// if it is not already in Node's trust store.
+if (process.env.DB_SSL === 'true') {
   poolConfig.ssl = { rejectUnauthorized: true };
-  if (process.env.DB_CA_CERT) {
-    poolConfig.ssl.ca = process.env.DB_CA_CERT;
-  }
+  const ca = process.env.DB_CA_CERT
+    || (process.env.DB_CA_CERT_PATH && fs.readFileSync(process.env.DB_CA_CERT_PATH, 'utf8'));
+  if (ca) poolConfig.ssl.ca = ca;
 }
 
 const pool = new Pool(poolConfig);
