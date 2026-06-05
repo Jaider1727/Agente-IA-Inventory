@@ -2,6 +2,7 @@
 
 const axios = require('axios');
 const { WA_BASE } = require('../lib/whatsapp');
+const { withRetry } = require('../lib/retry');
 
 /**
  * Uploads a buffer as a document to the WA Media API,
@@ -20,19 +21,19 @@ async function uploadMedia(buffer, filename) {
   form.append('messaging_product', 'whatsapp');
   form.append('type', 'application/pdf');
 
-  const { data } = await axios.post(
+  const { data } = await withRetry(() => axios.post(
     `${WA_BASE}/${process.env.WA_PHONE_ID}/media`,
     form,
     {
       headers: { Authorization: `Bearer ${process.env.WA_TOKEN}` },
     }
-  );
+  ));
 
   return data.id;
 }
 
 async function sendDocumentMessage(to, mediaId, filename) {
-  await axios.post(
+  await withRetry(() => axios.post(
     `${WA_BASE}/${process.env.WA_PHONE_ID}/messages`,
     {
       messaging_product: 'whatsapp',
@@ -46,7 +47,7 @@ async function sendDocumentMessage(to, mediaId, filename) {
         'Content-Type': 'application/json',
       },
     }
-  );
+  ));
 }
 
 module.exports = { sendDocument };

@@ -3,8 +3,37 @@
 const PDFDocument = require('pdfkit');
 const { formatCOP } = require('../utils/format');
 
+// Y position past which a new page is started before drawing the next row.
+// A4 is ~842pt tall with a 50pt margin; 720 leaves room for a row + footer.
+const PAGE_BREAK_Y = 720;
+
 /**
- * Generates an invoice PDF in memory and returns a Buffer.
+ * Draws the seller identity block from environment config. Each instance
+ * (one business) sets its own BUSINESS_* vars. Only BUSINESS_NAME is required.
+ */
+function drawSellerHeader(doc) {
+  doc.fontSize(16).text(process.env.BUSINESS_NAME || '', { align: 'left' });
+  doc.fontSize(9);
+  if (process.env.BUSINESS_NIT) doc.text(`NIT: ${process.env.BUSINESS_NIT}`);
+  if (process.env.BUSINESS_ADDRESS) doc.text(process.env.BUSINESS_ADDRESS);
+  if (process.env.BUSINESS_PHONE) doc.text(`Tel: ${process.env.BUSINESS_PHONE}`);
+}
+
+/** Draws the items table column headers at the current y. */
+function drawTableHeader(doc) {
+  const y = doc.y;
+  doc.fontSize(10)
+    .text('Descripción', 50, y, { width: 220 })
+    .text('Cantidad', 270, y, { width: 80, align: 'right' })
+    .text('Precio unit.', 350, y, { width: 90, align: 'right' })
+    .text('Subtotal', 440, y, { width: 90, align: 'right' });
+
+  doc.moveTo(50, doc.y + 2).lineTo(545, doc.y + 2).stroke();
+  doc.moveDown(0.3);
+}
+
+/**
+ * Generates a delivery-note PDF in memory and returns a Buffer.
  * No disk writes — streams directly to a buffer.
  */
 function generateInvoicePdf(invoice, items) {
@@ -16,8 +45,12 @@ function generateInvoicePdf(invoice, items) {
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    // Header
-    doc.fontSize(20).text('FACTURA DE DESPACHO', { align: 'center' });
+    // Seller identity
+    drawSellerHeader(doc);
+    doc.moveDown(0.8);
+
+    // Document title — REMISIÓN, not "FACTURA" (non-fiscal delivery note)
+    doc.fontSize(20).text('REMISIÓN', { align: 'center' });
     doc.moveDown(0.5);
     doc.fontSize(14).text(invoice.reference, { align: 'center' });
     doc.moveDown(1);
@@ -36,24 +69,23 @@ function generateInvoicePdf(invoice, items) {
 
     doc.moveDown(1);
 
-    // Items table header
-    doc.fontSize(10)
-      .text('Descripción', 50, doc.y, { width: 220, continued: false })
-      .text('Cantidad',    270, doc.y - doc.currentLineHeight(), { width: 80, align: 'right' })
-      .text('Precio unit.', 350, doc.y - doc.currentLineHeight(), { width: 90, align: 'right' })
-      .text('Subtotal',    440, doc.y - doc.currentLineHeight(), { width: 90, align: 'right' });
+    // Items table
+    drawTableHeader(doc);
 
-    doc.moveTo(50, doc.y + 2).lineTo(545, doc.y + 2).stroke();
-    doc.moveDown(0.3);
-
-    // Items
     let total = 0;
     for (const item of items) {
+      // Start a new page (with a fresh header) before a row would overflow.
+      if (doc.y > PAGE_BREAK_Y) {
+        doc.addPage();
+        drawTableHeader(doc);
+      }
+
       const y = doc.y;
-      doc.text(item.description,               50, y, { width: 220 });
-      doc.text(String(item.quantity),          270, y, { width: 80, align: 'right' });
-      doc.text(formatCOP(item.unit_price),     350, y, { width: 90, align: 'right' });
-      doc.text(formatCOP(item.total),          440, y, { width: 90, align: 'right' });
+      doc.fontSize(10);
+      doc.text(item.description,           50, y, { width: 220 });
+      doc.text(String(item.quantity),      270, y, { width: 80, align: 'right' });
+      doc.text(formatCOP(item.unit_price), 350, y, { width: 90, align: 'right' });
+      doc.text(formatCOP(item.total),      440, y, { width: 90, align: 'right' });
       doc.moveDown(0.2);
       total += Number(item.total);
     }

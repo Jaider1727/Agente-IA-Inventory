@@ -2,7 +2,7 @@
 
 require('dotenv').config();
 
-const REQUIRED_ENV = ['WA_TOKEN', 'WA_PHONE_ID', 'VERIFY_TOKEN', 'WA_APP_SECRET', 'OPENAI_API_KEY', 'DATABASE_URL'];
+const REQUIRED_ENV = ['WA_TOKEN', 'WA_PHONE_ID', 'VERIFY_TOKEN', 'WA_APP_SECRET', 'OPENAI_API_KEY', 'DATABASE_URL', 'AUTHORIZED_NUMBERS', 'BUSINESS_NAME'];
 const missing = REQUIRED_ENV.filter((k) => !process.env[k]);
 if (missing.length > 0) {
   console.error(`Missing required environment variables: ${missing.join(', ')}`);

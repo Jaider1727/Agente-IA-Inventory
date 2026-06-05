@@ -4,6 +4,9 @@ const express = require('express');
 const { validateSignature } = require('./validator');
 const { parseMessage } = require('./messageParser');
 const { transcribeAudio } = require('../audio/transcriber');
+const { isAuthorized } = require('../auth/authorizedNumbers');
+const { isDuplicate } = require('./dedup');
+const { checkRate, checkDailyCap } = require('../auth/rateLimit');
 const { loadSession, saveSession } = require('../session/sessionStore');
 const { runAgent } = require('../agent/index');
 const { sendText } = require('../whatsapp/sender');
@@ -59,6 +62,36 @@ router.post('/', async (req, res) => {
 
   const parsed = parseMessage(req.body);
   if (!parsed) return;
+
+  // Authorization gate — runs before transcription so an unauthorized number
+  // never triggers a paid Whisper call. Silent drop: replying would confirm to
+  // a probing sender that the line is active.
+  if (!isAuthorized(parsed.from)) {
+    console.warn(`Ignored message from unauthorized number: ${parsed.from}`);
+    return;
+  }
+
+  // Idempotency gate — WhatsApp delivery is at-least-once. Skip a message id
+  // we have already processed so a redelivery never creates a second invoice.
+  // Runs before transcription so a duplicate audio costs no Whisper call.
+  try {
+    if (await isDuplicate(parsed.id)) return;
+  } catch (err) {
+    console.error('Dedup check failed:', safeError(err));
+    return; // fail closed: if we can't confirm uniqueness, do not risk a double
+  }
+
+  // Abuse guard — drop bursts before they reach the paid OpenAI/Whisper calls.
+  if (!checkRate(parsed.from)) {
+    await trySend(parsed.from, 'Estás enviando mensajes muy rápido. Esperá unos segundos e intentá de nuevo.');
+    return;
+  }
+
+  // Cost ceiling — stop the instance once it hits its daily message budget.
+  if (!checkDailyCap()) {
+    await trySend(parsed.from, 'Se alcanzó el límite diario de mensajes de esta cuenta. Intentá mañana.');
+    return;
+  }
 
   const { from, type, text, mediaId } = parsed;
 

@@ -8,17 +8,17 @@ function makeBody(message) {
 
 describe('parseMessage', () => {
   test('parses a text message', () => {
-    const body = makeBody({ from: '573001234567', type: 'text', text: { body: 'hola' } });
-    expect(parseMessage(body)).toEqual({ from: '573001234567', type: 'text', text: 'hola' });
+    const body = makeBody({ id: 'wamid.text1', from: '573001234567', type: 'text', text: { body: 'hola' } });
+    expect(parseMessage(body)).toEqual({ id: 'wamid.text1', from: '573001234567', type: 'text', text: 'hola' });
   });
 
   test('parses an audio message', () => {
-    const body = makeBody({ from: '573001234567', type: 'audio', audio: { id: 'media-abc' } });
-    expect(parseMessage(body)).toEqual({ from: '573001234567', type: 'audio', mediaId: 'media-abc' });
+    const body = makeBody({ id: 'wamid.audio1', from: '573001234567', type: 'audio', audio: { id: 'media-abc' } });
+    expect(parseMessage(body)).toEqual({ id: 'wamid.audio1', from: '573001234567', type: 'audio', mediaId: 'media-abc' });
   });
 
   test('returns null for unsupported message type', () => {
-    const body = makeBody({ from: '573001234567', type: 'image', image: { id: 'img-1' } });
+    const body = makeBody({ id: 'wamid.img1', from: '573001234567', type: 'image', image: { id: 'img-1' } });
     expect(parseMessage(body)).toBeNull();
   });
 

@@ -12,14 +12,15 @@ function parseMessage(body) {
   if (!value?.messages?.length) return null;
 
   const message = value.messages[0];
+  const id = message.id;
   const from = message.from;
 
   if (message.type === 'text') {
-    return { from, type: 'text', text: message.text.body };
+    return { id, from, type: 'text', text: message.text.body };
   }
 
   if (message.type === 'audio') {
-    return { from, type: 'audio', mediaId: message.audio.id };
+    return { id, from, type: 'audio', mediaId: message.audio.id };
   }
 
   return null;
