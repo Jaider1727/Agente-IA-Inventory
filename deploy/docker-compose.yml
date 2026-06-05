@@ -42,6 +42,16 @@ services:
       retries: 5
     networks: [web]
 
+  # Web GUI for Postgres (the Postgres equivalent of phpMyAdmin).
+  # Bound to the VPS localhost only — reach it through an SSH tunnel, never
+  # expose a DB admin panel to the public internet.
+  adminer:
+    image: adminer:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    networks: [web]
+
   # ── One block per client. Copy, rename, point to its env file. ──
   cliente1:
     image: agente-facturacion:latest
